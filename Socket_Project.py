@@ -7,7 +7,7 @@ class handle():
         self.port1 = port1
         self.port2 = port2
         self.port3 = port3
-        slef.followers = []
+        self.followers = []
     
 #Form the handles dictionary
 handles = []
@@ -31,28 +31,19 @@ def follow(handleA,handleB):
     indexOfHandleB = find(handleB)
     handles[indexOfHandleB].followers.append(handleA)
     handles[indexOfHandleB].followers.sort()
-    
-    
-    followers = handles[handleB][1]
-    followers.append(handleA)
-    followers.sort()
-    ip = handles[handleB][0]
-    handles[handleB] = (ip, followers)
 
 #The ability for handle A to unfollow handle B
 def drop(handleA,handleB): 
-    followers = handles[handleB][1]
-    followers.remove(handleA)
-    followers.sort()
-    ip = handles[handleB][0]
-    handles[handleB] = (ip, followers)
+    indexOfHandleB = find(handleB)
+    handles[indexOfHandleB].followers.remove(handleA)
+    handles[indexOfHandleB].followers.sort()
 def find(handleName):
     count=0
     for i in handles:
         if handleName == i.handleName:
-            return count:
-        count++
-    return -1:
+            return count
+        count = count+1
+    return -1
 
 #Test
 print(register("khalid","4","1","2","3"))
@@ -63,11 +54,14 @@ print(register("khalid2","4","1","2","3"))
 #register("abrar",4,4)
 print(query_handles())
 
-#follow("salih","khalid")
-#follow("moath","khalid")
-#follow("abrar","khalid")
-#follow("zezo","khalid")
+follow("salih","khalid")
+follow("moath","khalid")
+follow("abrar","khalid")
+follow("zezo","khalid")
 #drop("zezo","khalid")
 #print(handles["khalid"])
 print(handles)
 print(handles[0].handleName)
+print(handles[find("khalid")].followers)
+drop("zezo","khalid")
+print(handles[find("khalid")].followers)
