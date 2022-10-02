@@ -1,26 +1,30 @@
-import random
 import socket
 import threading
+import sys
 
+
+#Defines the varaibles
 HEADER = 1024
 SERVER = socket.gethostbyname(socket.gethostname())
 PORT = 36500
 ADDR = (SERVER,PORT)
 FORMAT = "utf-8"
 
+#Define the socket
 server = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 server.bind(ADDR)
 
-
+#Recieve the message from user and response
 def handle_client(conn,addr):
     connected = True
 
     while connected:
         msg = conn.recv(HEADER).decode(FORMAT)
         if msg:
-            obj = handle(msg,"192,192,192,192","1","2","3")
+            msgList = msg.split(":")
+            obj = handle(msgList[0],msgList[1],msgList[2],msgList[3],msgList[4])
             message = register(obj)
-            print(f"{addr} , {msg}")
+            print(f"{addr} , {msgList}")
             print(message)
         if msg == "!":
             connected = False
@@ -28,27 +32,98 @@ def handle_client(conn,addr):
     conn.close()
 
 
+#Start the thread
 def start():
     count = 1
     server.listen()
-    print("server is listening")
+    print("Server " + SERVER + " is listening now ...")
     while True:
        conn, addr = server.accept()
        thread = threading.Thread(target=handle_client, args=(conn,addr))
        thread.start()
-       print(f"ACTIVE CONNECTION {count}")
-       count += 1 
+       print("ACTIVE CONNECTION THREAD NUMBER " + str(count))
+
+       cond = True
+    
+#For UI menu propose   
+       while cond:
+            print('Enter "C" to go to commands or "L" to liseten to other users')
+            count += 1
+
+            condition_follow = False
+            condition_drop = False
+            condition_exit = False
+
+            for line in sys.stdin:
+                    if 'C' == line.rstrip().upper():
+                        print("Choose one of the following :\n")
+                        print("Enter 1 for query handles\n")
+                        print("Enter 2 for follow\n")
+                        print("Enter 3 for drop\n")
+                        print("Enter 4 to exit\n")
+                    elif 'L' == line.rstrip().upper():
+                        cond = False
+                        break
+                    elif '1' == line.rstrip():
+                        print(query_handles())
+                        break
+
+                    elif condition_follow or ('2' == line.rstrip()):
+                        if condition_follow:
+                            condition_follow = False
+                            words = line.split()
+                            handle_1 = find(words[0])
+                            handle_2 = find(words[1])
+                            if handle_1 and handle_2:
+                                follow(handle_1,handle_2)
+                                print("Followed Succecfully")
+                                break
+                            else:
+                                print("Failed!")
+                                break
+                        else :
+                            print("Enter the two handles :\n")
+                            condition_follow = True
+                    elif condition_drop or ('3' == line.rstrip()):
+                        if condition_drop:
+                            condition_drop = False
+                            words = line.split()
+                            handle_1 = find(words[0])
+                            handle_2 = find(words[1])
+                            if handle_1 and handle_2:
+                                drop(handle_1,handle_2)
+                                print("Dropped Succecfully")
+                                break
+                            else:
+                                print("Failed!")
+                                break
+                        else :
+                            print("Enter the two handles :\n")
+                            condition_drop = True
+                    elif condition_exit or '4' == line.rstrip():
+                        if condition_exit:
+                            condition_exit = False
+                            word = line.rstrip()
+                            handle = find(word)
+                            if handle:
+                                exit(handle)
+                                print("Exit Succecfully")
+                                if len(handles) == 0:
+                                    print("Since it's last handle the program has terminated.")
+                                    sys.exit()
+                                break
+                            else:
+                                print("Failed!")
+                                break
+                        else :
+                            print("Enter handle \n")
+                            condition_exit = True
+                    else :
+                        print('wrong input')
+                        break 
+        
        
-
-#TODO Check Again!
-range1 = 36501
-range2 = 37000
-rangeDict = {}
-
-while(range1 < range2):
-    rangeDict[range1] = True
-    range1 += 1
-
+#Class for each user
 class handle():
     def __init__(self,handleName,ipv4,port1,port2,port3):
 
@@ -58,55 +133,49 @@ class handle():
         self.port2 = port2
         self.port3 = port3
         self.followers = []
+        self.following = []
     
-#Form the handles list
+#Defines the handles list
 handles = []
 
-#register the handle if unique
+#Register the handle if unique
 def register(object):
     for i in handles:
         if object.handleName == i.handleName:
             return "FAILURE"
     handles.append(object)
-    handles.sort()
     return "SUCCESS"
             
 #Return the number of handles with its content
 def query_handles():
     listOfHandlesNames = [i.handleName for i in handles]
-    return(len(handles),listOfHandlesNames)
+    return(str(len(handles)) + " , " + str(listOfHandlesNames))
 
 #The ability for handle A to follow handle B
 def follow(handleA,handleB):
-    indexOfHandleB = find(handleB)
-    handles[indexOfHandleB].followers.append(handleA)
-    handles[indexOfHandleB].followers.sort()
+    handleB.followers.append(handleA)
+    handleB.followers.sort()
+
+    #For exit function only
+    handleA.following.append(handleB)
 
 #The ability for handle A to unfollow handle B
 def drop(handleA,handleB): 
-    indexOfHandleB = find(handleB)
-    handles[indexOfHandleB].followers.remove(handleA)
-    handles[indexOfHandleB].followers.sort()
+    handleB.followers.remove(handleA)
 
-#Function to find the index of handle in the list    
+#Exit handle A from the proccess
+def exit(handle):
+    for i in handle.following:
+        drop(handle,i)
+    handles.remove(handle)
+
+#To read a string from user and find the corresponding object to it
 def find(handleName):
-    count=0
     for i in handles:
         if handleName == i.handleName:
-            return count
-        count = count+1
-    return -1
-
-#Choose from allowed port number randomly.
-def randomPort():
-
-    condition = True
-    while condition:
-        portRandom = random.randint(0, 499)
-        port = list(rangeDict.keys())[portRandom]
-        if rangeDict[port]:
-            condition = False
-            return port
+            return i
+    return 0
 
 
+#Start the thread and proccess
 start()
