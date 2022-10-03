@@ -1,6 +1,7 @@
 import socket
 import random
 import sys
+import pickle
 
 if len(sys.argv) != 3:
     print("The number of argument should be 2 'IP' and 'Port number'")
@@ -9,9 +10,7 @@ if len(sys.argv) != 3:
 #Defines the varaibles
 SERVER = sys.argv[1]
 PORT = int(sys.argv[2])
-for line in sys.stdin:
-    handle = line.rstrip()
-    break
+
 
 ADDR = (SERVER,PORT)
 IP = socket.gethostbyname(socket.gethostname())
@@ -45,18 +44,71 @@ user = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 user_left = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 user_right = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 
+# the size of message recived
+HEADER = 1024
+
+
 user.bind((IP,int(PORT1)))
 user_left.bind((IP,int(PORT2)))
 user_right.bind((IP,int(PORT3)))
 user.connect(ADDR)
+conn, addr = user.accept()
 
 #Ask the tracker to register
-def register(handle,ip,port1,port2,port3):
-    message = handle+":"+ip+":"+port1+":"+port2+":"+port3
-    message = (message).encode(FORMAT)
-    user.send(message)
+def register(ip,port1,port2,port3):
+    while True:
+        handle = input("Enter Handle name to register: ")
+        message = handle+":"+ip+":"+port1+":"+port2+":"+port3
+        message = (message).encode(FORMAT)
+        user.send(message)
+        msg = conn.recv(HEADER).decode(FORMAT)
+        if msg == "SUCCESS":
+            print(msg)
+            break
+        else:
+            print(msg)
+    
+
+def commands():
+    
+    
+    while(True):
+
+        inputForOption = input(f"Enter 1 for query handles\nEnter 2 for follow\nEnter 3 for drop\nEnter -1 to exit")
+        if inputForOption == "1":
+            message = (inputForOption).encode(FORMAT)
+            user.send(message)
+            msg = conn.recv(HEADER).decode(FORMAT)
+            print(msg)
+
+        
+        elif inputForOption == "2":
+            inputForFollow = input(f"Enter the name of who you want to follow:")
+            message = (inputForOption+" "+inputForFollow).encode(FORMAT)
+            user.send(message)
+            msg = conn.recv(HEADER).decode(FORMAT)
+            print(msg)
 
 
-register(handle,IP,PORT1,PORT2,PORT3)
+        elif inputForOption == "3":
+            inputForUnFollow = input(f"Enter the name of who you want to unfollow:")
+            message = (inputForOption+" "+inputForUnFollow).encode(FORMAT)
+            user.send(message)
+            msg = conn.recv(HEADER).decode(FORMAT)
+            print(msg)
 
+        elif inputForOption == "-1":
+            message = (inputForOption).encode(FORMAT)
+            user.send(message)
+            sys.exit()
+        else:
+            print("invalid input")
+
+
+
+register(IP,PORT1,PORT2,PORT3)
+
+commands()
+
+msg = conn.recv(HEADER).decode(FORMAT)
 
