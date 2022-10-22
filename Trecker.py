@@ -1,4 +1,5 @@
 import socket
+import sys
 import threading
 
 #Defines the varaibles
@@ -78,6 +79,7 @@ def handle_client(conn,addr):
     print("\nCONNECTION WITH " + obj.ipv4 + ":" + obj.port1 + " CLOSED")
     if len(handles) == 0:
         cond = True
+        sys.exit()
     conn.close()
     
 
@@ -90,6 +92,7 @@ def start():
     while True:
        conn, addr = server.accept()
        thread = threading.Thread(target=handle_client, args=(conn,addr))
+       thread.daemon
        thread.start()
        print("ACTIVE CONNECTION THREAD NUMBER " + str(count))
        count += 1
