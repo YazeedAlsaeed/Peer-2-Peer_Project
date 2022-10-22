@@ -1,6 +1,9 @@
+from email import message
+from http import server
 import socket
 import random
 import sys
+import threading
 
 if len(sys.argv) != 3:
     print("out : The number of argument should be 2 'IP' and 'Port number'")
@@ -57,7 +60,7 @@ condition = True
 #Ask the tracker to register
 def register(handle,ip,port1,port2,port3):
     while condition:
-        
+        handle = input("in : Enter Handle name to register: \n")
         message = handle+":"+ip+":"+port1+":"+port2+":"+port3
         message = (message).encode(FORMAT)
         user.send(message)
@@ -68,14 +71,11 @@ def register(handle,ip,port1,port2,port3):
         else:
             print(msg)
             handle = input("\nin : Enter Handle name to register: \n")
-    commands()
-    
 
 def commands():
     
     
     while(True):
-
         inputForOption = input(f"in : \nEnter 1 for query handles\nEnter 2 for follow\nEnter 3 for drop\nEnter 4 to tweet\nEnter 0 to exit\n")
         if inputForOption == "1":
             message = (inputForOption).encode(FORMAT)
@@ -108,9 +108,10 @@ def commands():
             else:
                 message = msg.split()
                 table = [(IP,PORT2,PORT3)]
-                for i in message:
-                    subMessage = i.split(',')
-                    table.append((subMessage[0],subMessage[1],subMessage[2]))
+                if len(table) != 0:
+                    for i in message:
+                        subMessage = i.split(',')
+                        table.append((subMessage[0],subMessage[1],subMessage[2]))
                 response = setUp(table)
                 if response == "SUCCESS":
                     print("out : SUCCESS,\n")
@@ -133,14 +134,46 @@ def commands():
 
 def setUp(table):
     #Send for each follower ip left ip right port
-    ()
+    conn, addr = user_right.accept()
+    thread = threading.Thread(target=sendLeftRight(table), args=(conn,addr))
+    thread.daemon
+    thread.start()
+    user_left.listen()
+    while True:
+       conn, addr = user_left.accept()
+       thread = threading.Thread(args=(conn,addr))
+       msg = conn.recv(HEADER).decode(FORMAT)
+       thread.daemon
+       thread.start()
     return "SUCCESS"
 
+def listeningThread():
+    user_left.listen()
+    while True:
+       conn, addr = user_left.accept()
+       thread = threading.Thread(args=(conn,addr))
+       msg = conn.recv(HEADER).decode(FORMAT)
+       thread.daemon
+       thread.start()
 
+def startThread():
+    thread = threading.Thread(target=commands)
+    thread.start()
+
+def waitForUser():
+    msg = conn.recv(HEADER).decode(FORMAT)
+    return "T"
+def sendLeftRight(table):
+    for i in range(1,len(table)):
+        user_right.connect((table[i][0],table[i][1]))
+        message = table[i-1][0]+":"+table[i-1][1]+":"+table[i+1][0]+":"+table[i+1][1]
+        message = message.encode(FORMAT)
+        user_right.send(message)
+        print("Send")
 
 def tweet(message):
-    ()
+    return "T"
 
-while True:
-    handle = input("in : Enter Handle name to register: \n")
-    register(handle,IP,PORT1,PORT2,PORT3)
+register(handle,IP,PORT1,PORT2,PORT3)
+startThread()
+listeningThread()
