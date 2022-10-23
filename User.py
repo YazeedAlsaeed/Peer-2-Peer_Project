@@ -1,9 +1,8 @@
-from email import message
-from http import server
 import socket
 import random
 import sys
 import threading
+
 
 if len(sys.argv) != 3:
     print("out : The number of argument should be 2 'IP' and 'Port number'")
@@ -13,9 +12,14 @@ if len(sys.argv) != 3:
 SERVER = sys.argv[1]
 PORT = int(sys.argv[2])
 
+def get_ip_address():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.connect(("8.8.8.8", 80))
+    return s.getsockname()[0]
 
 ADDR = (SERVER,PORT)
-IP = socket.gethostbyname(socket.gethostname())
+#IP = socket.gethostbyname(socket.gethostname())
+IP = get_ip_address()
 FORMAT = "utf-8"
 
 
@@ -44,7 +48,6 @@ PORT3 = randomPort()
 #Define the sockets
 user = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 user_left = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-user_right = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 
 # the size of message recived
 HEADER = 1024
@@ -52,7 +55,6 @@ HEADER = 1024
 
 user.bind(("",int(PORT1)))
 user_left.bind(("",int(PORT2)))
-user_right.bind(("",int(PORT3)))
 user.connect(ADDR)
 handle = ""
 condition = True
@@ -70,11 +72,13 @@ def register(handle,ip,port1,port2,port3):
             break
         else:
             print(msg)
-            handle = input("\nin : Enter Handle name to register: \n")
+    thread = threading.Thread(target=commands, args=(handle,))
+    thread.start()
+    startThread()
 
-def commands():
-    
-    
+def commands(username):
+    handle = username
+
     while(True):
         inputForOption = input(f"in : \nEnter 1 for query handles\nEnter 2 for follow\nEnter 3 for drop\nEnter 4 to tweet\nEnter 0 to exit\n")
         if inputForOption == "1":
@@ -100,28 +104,28 @@ def commands():
             print(msg)
 
         elif inputForOption == "4": 
-            message = ("4"+" "+handle).encode(FORMAT)
+            message = ("4" + " " + handle).encode(FORMAT)
             user.send(message)
             msg = user.recv(HEADER).decode(FORMAT)
             if msg == "FAILURE":
                 print("out : FAILURE")
             else:
                 message = msg.split()
-                table = [(IP,PORT2,PORT3)]
-                if len(table) != 0:
+                if len(message) == 0:
+                    print("out : No Followers yet")
+                else:
+                    table = [(IP,PORT2,PORT3)]
                     for i in message:
-                        subMessage = i.split(',')
-                        table.append((subMessage[0],subMessage[1],subMessage[2]))
-                response = setUp(table)
-                if response == "SUCCESS":
-                    print("out : SUCCESS,\n")
+                            subMessage = i.split(',')
+                            table.append((subMessage[0],subMessage[1],subMessage[2]))
                     while(True):
                         userInput = input("in : Enter your 140 char tweet to send : ")
-                        if len(userInput > 140):
+                        if len(userInput) > 140:
                             print("tweet should not be more than 140 char")
-                        else: 
+                        else:
+                            userInput = userInput.replace(" ", "_")
+                            tweet(table,userInput)
                             break
-                    tweet(userInput)
 
         elif inputForOption == "0":
             message = (inputForOption).encode(FORMAT)
@@ -132,48 +136,52 @@ def commands():
         else:
             print("out : invalid input\n")
 
-def setUp(table):
-    #Send for each follower ip left ip right port
-    conn, addr = user_right.accept()
-    thread = threading.Thread(target=sendLeftRight(table), args=(conn,addr))
-    thread.daemon
-    thread.start()
-    user_left.listen()
-    while True:
-       conn, addr = user_left.accept()
-       thread = threading.Thread(args=(conn,addr))
-       msg = conn.recv(HEADER).decode(FORMAT)
-       thread.daemon
-       thread.start()
-    return "SUCCESS"
-
-def listeningThread():
-    user_left.listen()
-    while True:
-       conn, addr = user_left.accept()
-       thread = threading.Thread(args=(conn,addr))
-       msg = conn.recv(HEADER).decode(FORMAT)
-       thread.daemon
-       thread.start()
+def recive(conn):
+  msg = conn.recv(HEADER).decode(FORMAT)
+  msg = msg.split()
+  table = msg[0]
+  tweet = msg[1]
+  position = int(msg[2])
+  table = table.split(";")
+  table.pop()
+  n = len(table)
+  adress = table[(position+1) % n].split(",")  
+  if position == 0:
+    print("You reached the end, Enter comand number to proceed")
+    return()
+  else:
+    user_right = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    user_right.bind(("",int(PORT3)))
+    print("recived with order '" + str(position) + "' : " + tweet.replace("_"," ") +"\n Enter command number to proceed")
+    user_right.connect((adress[0] , int(adress[1])))
+    message = (msg[0]+" "+tweet+" "+" "+ str((position+1) % n))
+    user_right.send(message.encode(FORMAT))
+    user_right.close()
+    return()
 
 def startThread():
-    thread = threading.Thread(target=commands)
-    thread.start()
+    user_left.listen()
+    print("User is listening now ...")
+    while True:
+       conn, addr = user_left.accept()
+       thread = threading.Thread(target=recive, args=(conn,))
+       thread.start()
 
-def waitForUser():
-    msg = conn.recv(HEADER).decode(FORMAT)
-    return "T"
-def sendLeftRight(table):
-    for i in range(1,len(table)):
-        user_right.connect((table[i][0],table[i][1]))
-        message = table[i-1][0]+":"+table[i-1][1]+":"+table[i+1][0]+":"+table[i+1][1]
-        message = message.encode(FORMAT)
-        user_right.send(message)
-        print("Send")
+def tweet(table,tweet):
+    user_right = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    print("1")
+    user_right.bind(("",int(PORT3)))
+    print(table)
+    user_right.connect((table[1][0],int(table[1][1])))
+    
+    stringTable = ""
+    for i in table:
+        stringTable += i[0]+","+i[1]+","+i[2]+";"
+    message = (stringTable+" "+tweet+" "+" "+"1")
+    print("3")
+    user_right.send(message.encode(FORMAT))
+    user_right.close()
+    print("4")
 
-def tweet(message):
-    return "T"
 
 register(handle,IP,PORT1,PORT2,PORT3)
-startThread()
-listeningThread()
