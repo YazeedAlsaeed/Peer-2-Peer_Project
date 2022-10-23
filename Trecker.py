@@ -1,5 +1,4 @@
 import socket
-import sys
 import threading
 
 #Defines the varaibles
@@ -66,10 +65,10 @@ def handle_client(conn,addr):
         #To tweet 
         elif msg[0] == "4":
             message = msg.split()
-            if len(message) != 2:
-                conn.send("out : Error 'Takes one argument only'".encode(FORMAT))
-            else:
-                conn.send(tweet(message[1]).encode(FORMAT))
+            try:
+                conn.send(buildLogic(message[1]).encode(FORMAT))
+            except:
+                conn.send(("FAILURE").encode(FORMAT))
 
          #To exit   
         elif msg[0] == "0":
@@ -79,10 +78,8 @@ def handle_client(conn,addr):
     print("\nCONNECTION WITH " + obj.ipv4 + ":" + obj.port1 + " CLOSED")
     if len(handles) == 0:
         cond = True
-        sys.exit()
     conn.close()
     
-
 
 #Start the thread
 def start():
@@ -92,12 +89,10 @@ def start():
     while True:
        conn, addr = server.accept()
        thread = threading.Thread(target=handle_client, args=(conn,addr))
-       thread.daemon
        thread.start()
        print("ACTIVE CONNECTION THREAD NUMBER " + str(count))
        count += 1
-        
-       
+              
 #Class for each user
 class handle():
 
@@ -124,6 +119,7 @@ def register(object):
             
 #Return the number of handles with its content
 def query_handles():
+    sort()
     listOfHandlesNames = [i.handleName for i in handles]
     return("out : " + str(len(handles)) + " , " + str(listOfHandlesNames))
 
@@ -138,14 +134,7 @@ def follow(handleA,handleB):
 def drop(handleA,handleB): 
     handleB.followers.remove(handleA)
     handleA.following.remove(handleB)
-
-#The ability for a spesific handle to tweet 
-def tweet(handle):
-    for i in handles:
-        if i.handleName == handle:
-            return buildLogic(handle)
-    return "FAILURE"
-
+    
 #TODO end-tweet
 
 #Exit handle A from the proccess
@@ -153,7 +142,7 @@ def exit(handle):
     for i in handle.following:
         drop(handle,i)
     handles.remove(handle)
-    return handle.handleName + "out : exit succeccfully"
+    return handle.handleName + " exit succeccfully"
 
 #To read a string from user and find the corresponding object to it
 def find(handleName):
@@ -164,11 +153,39 @@ def find(handleName):
 
 #To build a logic ring table
 def buildLogic(handle):
-    followers = find(handle).followers
-    table = ""
-    for i in followers:
-        table += " " + str(i.ipv4 + "," + i.port2 + "," + i.port3)
-    return table
+    sort()
+    for i in handles:
+        if i.handleName == handle:
+            followers = i.followers
+            table = ""
+            sortFollowers(i)
+            for i in followers:
+                table += " " + str(i.ipv4 + "," + i.port2 + "," + i.port3)
+            return table
+    return "FAILURE"
+    
+def sort():
+    n = len(handles)
+
+    swapped = False
+    for i in range(n-1):
+        for j in range(0, n-i-1):
+            if handles[j].handleName > handles[j + 1].handleName:
+                swapped = True
+                handles[j], handles[j + 1] = handles[j + 1], handles[j]
+        if not swapped:
+            return
+    
+def sortFollowers(handle):
+    n = len(handle.followers)
+    swapped = False
+    for i in range(n-1):
+        for j in range(0, n-i-1):
+            if handle.followers[j].handleName > handle.followers[j + 1].handleName:
+                swapped = True
+                handle.followers[j], handle.followers[j + 1] = handle.followers[j + 1], handle.followers[j]
+        if not swapped:
+            return
 
 #Start the thread and proccess
 start()
