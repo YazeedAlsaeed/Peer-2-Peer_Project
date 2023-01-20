@@ -1,8 +1,8 @@
-# Socket Project
+# Twitter Peer-2-Peer Project
 
 
 # Description 
-##### This project is a small application that works on the basis of the Peer-2-Peer protocol (no server needed). The application consists of followers for each user (Handle). each user (Handle) has the ability to tweet, then all his followers receive the tweet in alphabetical order as long as the user is still a follower.
+##### This project is a small application that works on the basis of the Peer-2-Peer protocol (no server needed). The application consists of handles (users). each handle (user) can have none or more followers. each handle (user) has the ability to tweet, then all his followers will receive the tweet through those followers (since it is Peer-2-Peer, the tweet will passed between the followers in alphabetical order until it reaches all of them). all users will receive the tweet as long as they are still followeres. 
 
 * The application consist of two python files, "User.py" and "Tracker.py". 
 
