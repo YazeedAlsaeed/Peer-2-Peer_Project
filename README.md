@@ -14,5 +14,5 @@
 ##### 3 - There are two arguments for User.py to run properly, 
 * First argument: The IP address of the Tracker.
 * Second argument: The Port number of the Tracker. 
-##### 5 - You can run as many User.py file as you wish, as long as you run each file on diffrent mechine or terminal (diffrent end host) on same subnet.
-##### 4 - Finally, follow the instructions appear on the app menu! 
+##### 4 - You can run as many User.py file as you wish, as long as you run each file on diffrent mechine or terminal (diffrent end host) on same subnet.
+##### 5 - Finally, follow the instructions appear on the app menu! 
